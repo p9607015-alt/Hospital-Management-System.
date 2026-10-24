@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Management System</title>
+    <!-- React & ReactDOM CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel CDN for JSX processing -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+      }
+      body {
+        background-color: #f4f7f6;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 20px auto;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #2c3e50;
+      }
+      .nav-tabs {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .nav-tabs button {
+        padding: 10px 20px;
+        background-color: #bdc3c7;
+        color: #2c3e50;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        width: auto;
+      }
+      .nav-tabs button.active {
+        background-color: #2c3e50;
+        color: white;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 20px;
+      }
+      .card {
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      }
+      form div {
+        margin-bottom: 12px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #34495e;
+      }
+      input, select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      button[type="submit"] {
+        width: 100%;
+        padding: 10px;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      button[type="submit"]:hover {
+        background-color: #2980b9;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+      }
+      th {
+        background-color: #2c3e50;
+        color: white;
+      }
+      .btn-delete {
+        background-color: #e74c3c;
+        color: white;
+        padding: 5px 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        width: auto;
+      }
+      .btn-delete:hover {
+        background-color: #c0392b;
+      }
+      .btn-status {
+        background-color: #27ae60;
+        color: white;
+        padding: 5px 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 5px;
+        width: auto;
+      }
+      @media (max-width: 768px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect } = React;
+      const API_BASE = 'http://localhost:5000/api';
+
+      function App() {
+        const [activeTab, setActiveTab] = useState('patients');
+
+        return (
+          <div className="container">
+            <h1>🏥 Hospital Management System</h1>
+            <div className="nav-tabs">
+              <button className={activeTab === 'patients' ? 'active' : ''} onClick={() => setActiveTab('patients')}>Patients</button>
+              <button className={activeTab === 'appointments' ? 'active' : ''} onClick={() => setActiveTab('appointments')}>Appointments</button>
+              <button className={activeTab === 'billing' ? 'active' : ''} onClick={() => setActiveTab('billing')}>Billing</button>
+            </div>
+
+            {activeTab === 'patients' && <PatientsModule />}
+            {activeTab === 'appointments' && <AppointmentsModule />}
+            {activeTab === 'billing' && <BillingModule />}
+          </div>
+        );
+      }
+
+      // 1. PATIENTS MODULE
+      function PatientsModule() {
+        const [patients, setPatients] = useState([]);
+        const [formData, setFormData] = useState({ name: '', age: '', gender: 'Male', disease: '', doctorAssigned: '' });
+
+        const fetchPatients = async () => {
+          const res = await fetch(`${API_BASE}/patients`);
+          setPatients(await res.json());
+        };
+
+        useEffect(() => { fetchPatients(); }, []);
+
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          await fetch(`${API_BASE}/patients`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+          setFormData({ name: '', age: '', gender: 'Male', disease: '', doctorAssigned: '' });
+          fetchPatients();
+        };
+
+        const handleDelete = async (id) => {
+          await fetch(`${API_BASE}/patients/${id}`, { method: 'DELETE' });
+          fetchPatients();
+        };
+
+        return (
+          <div className="grid">
+            <div className="card">
+              <h2>Register Patient</h2>
+              <form onSubmit={handleSubmit}>
+                <div><label>Name</label><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required /></div>
+                <div><label>Age</label><input type="number" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} required /></div>
+                <div><label>Gender</label>
+                  <select value={formData.gender} onChange={e => setFormData({...formData, gender: e.target.value})}>
+                    <option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option>
+                  </select>
+                </div>
+                <div><label>Disease</label><input type="text" value={formData.disease} onChange={e => setFormData({...formData, disease: e.target.value})} required /></div>
+                <div><label>Doctor Assigned</label><input type="text" value={formData.doctorAssigned} onChange={e => setFormData({...formData, doctorAssigned: e.target.value})} /></div>
+                <button type="submit">Add Patient</button>
+              </form>
+            </div>
+            <div className="card">
+              <h2>Patient Records ({patients.length})</h2>
+              <table>
+                <thead><tr><th>Name</th><th>Age/Gender</th><th>Disease</th><th>Doctor</th><th>Action</th></tr></thead>
+                <tbody>
+                  {patients.map(p => (
+                    <tr key={p._id}>
+                      <td>{p.name}</td><td>{p.age} / {p.gender}</td><td>{p.disease}</td><td>{p.doctorAssigned}</td>
+                      <td><button className="btn-delete" onClick={() => handleDelete(p._id)}>Delete</button></td>
+                    </tr>
+                  ))}
+                  {patients.length === 0 && <tr><td colSpan="5" style={{textAlign:'center'}}>No records found.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      }
+
+      // 2. APPOINTMENTS MODULE
+      function AppointmentsModule() {
+        const [appointments, setAppointments] = useState([]);
+        const [formData, setFormData] = useState({ patientName: '', doctorName: '', date: '' });
+
+        const fetchAppointments = async () => {
+          const res = await fetch(`${API_BASE}/appointments`);
+          setAppointments(await res.json());
+        };
+
+        useEffect(() => { fetchAppointments(); }, []);
+
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          await fetch(`${API_BASE}/appointments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+          setFormData({ patientName: '', doctorName: '', date: '' });
+          fetchAppointments();
+        };
+
+        const handleDelete = async (id) => {
+          await fetch(`${API_BASE}/appointments/${id}`, { method: 'DELETE' });
+          fetchAppointments();
+        };
+
+        return (
+          <div className="grid">
+            <div className="card">
+              <h2>Schedule Appointment</h2>
+              <form onSubmit={handleSubmit}>
+                <div><label>Patient Name</label><input type="text" value={formData.patientName} onChange={e => setFormData({...formData, patientName: e.target.value})} required /></div>
+                <div><label>Doctor Name</label><input type="text" value={formData.doctorName} onChange={e => setFormData({...formData, doctorName: e.target.value})} required /></div>
+                <div><label>Date & Time</label><input type="datetime-local" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} required /></div>
+                <button type="submit">Book Appointment</button>
+              </form>
+            </div>
+            <div className="card">
+              <h2>Appointments List ({appointments.length})</h2>
+              <table>
+                <thead><tr><th>Patient</th><th>Doctor</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody>
+                  {appointments.map(a => (
+                    <tr key={a._id}>
+                      <td>{a.patientName}</td><td>{a.doctorName}</td><td>{new Date(a.date).toLocaleString()}</td><td>{a.status}</td>
+                      <td><button className="btn-delete" onClick={() => handleDelete(a._id)}>Cancel</button></td>
+                    </tr>
+                  ))}
+                  {appointments.length === 0 && <tr><td colSpan="5" style={{textAlign:'center'}}>No appointments found.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      }
+
+      // 3. BILLING MODULE
+      function BillingModule() {
+        const [bills, setBills] = useState([]);
+        const [formData, setFormData] = useState({ patientName: '', amount: '' });
+
+        const fetchBills = async () => {
+          const res = await fetch(`${API_BASE}/billings`);
+          setBills(await res.json());
+        };
+
+        useEffect(() => { fetchBills(); }, []);
+
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          await fetch(`${API_BASE}/billings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+          setFormData({ patientName: '', amount: '' });
+          fetchBills();
+        };
+
+        const handleMarkPaid = async (id) => {
+          await fetch(`${API_BASE}/billings/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Paid' })
+          });
+          fetchBills();
+        };
+
+        const handleDelete = async (id) => {
+          await fetch(`${API_BASE}/billings/${id}`, { method: 'DELETE' });
+          fetchBills();
+        };
+
+        return (
+          <div className="grid">
+            <div className="card">
+              <h2>Generate Bill</h2>
+              <form onSubmit={handleSubmit}>
+                <div><label>Patient Name</label><input type="text" value={formData.patientName} onChange={e => setFormData({...formData, patientName: e.target.value})} required /></div>
+                <div><label>Amount ($)</label><input type="number" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} required /></div>
+                <button type="submit">Create Bill</button>
+              </form>
+            </div>
+            <div className="card">
+              <h2>Billing Records ({bills.length})</h2>
+              <table>
+                <thead><tr><th>Patient</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody>
+                  {bills.map(b => (
+                    <tr key={b._id}>
+                      <td>{b.patientName}</td><td>${b.amount}</td><td>{b.status}</td>
+                      <td>
+                        {b.status === 'Pending' && <button className="btn-status" onClick={() => handleMarkPaid(b._id)}>Pay</button>}
+                        <button className="btn-delete" onClick={() => handleDelete(b._id)}>Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {bills.length === 0 && <tr><td colSpan="4" style={{textAlign:'center'}}>No billing records found.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

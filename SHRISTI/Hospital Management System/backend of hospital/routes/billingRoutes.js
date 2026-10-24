@@ -1,5 +1,5 @@
 import express from 'express';
-import Billing from '../models/billing.js';
+import Billing from '../models/Billing.js';
 
 const router = express.Router();
 
